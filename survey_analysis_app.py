@@ -38,6 +38,9 @@ if "df" not in st.session_state:
 if "properties" not in st.session_state:
     st.session_state["properties"] = {}
 
+if "selected_column" not in st.session_state:
+    st.session_state["selected_column"] = None
+
 
 # Set up the properties for the OpenAI function
 st.session_state["properties"] = {code: {"description": f"Assign the appropriate rating for the following code: {code}. Be sure to use the N/A option if the code does not apply to the text.",
@@ -307,9 +310,11 @@ if st.session_state["openai_api_key"] != "":
     st.divider()
 
 
-    def process_csv_file():
+    def process_csv_file(column_name: str = "Comments") -> None:
+        if st.session_state['df'] is None:
+            return  
         df = st.session_state['df'].copy().dropna()
-        df['anonymized_text'] = df['Comments'].astype(str).apply(anonymize_text)
+        df['anonymized_text'] = df[column_name].astype(str).apply(anonymize_text)
         df['codes'] = df['anonymized_text'].astype(str).apply(get_df_codes)
 
         st.session_state['codes_df'] = pd.DataFrame(df['codes'].tolist())
@@ -326,7 +331,7 @@ if st.session_state["openai_api_key"] != "":
                 "Upload CSV file here", type=["csv"], key="csv_file")
             if st.session_state['csv_file'] is not None:
                 process_button = st.button(
-                    "Process CSV File", on_click=process_csv_file)
+                    "Process CSV File", on_click=process_csv_file(st.session_state["selected_column"]))
 
         with col2:
             st.empty()
@@ -337,6 +342,11 @@ if st.session_state["openai_api_key"] != "":
                 st.session_state['df'] = pd.read_csv(st.session_state['csv_file'])
                 st.dataframe(
                     st.session_state['df'].dropna(), use_container_width=True, hide_index=True)
+                st.selectbox("Select Column to Analyze", 
+                             st.session_state['df'].columns, 
+                             key="selected_column",
+                             on_change=lambda: st.session_state.update({"selected_column": st.session_state["selected_column"]}),
+                             )
 
         with col4:
             st.empty()
