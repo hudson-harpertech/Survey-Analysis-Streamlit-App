@@ -1,0 +1,7 @@
+streamlit
+spacy
+pandas
+numpy
+plotly-express
+openai
+st-annotated-text
